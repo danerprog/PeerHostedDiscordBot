@@ -1,0 +1,118 @@
+Signals:
+
+>>> 100 series (login and logout signals)
+101 - login successful
+	- owner username & id
+102 - shutdown initiated
+	- priority number
+103 - shutdown successful
+
+>>> 200 series (host tracking signals)
+201 - is there an active host for the bot?
+202 - i am the active host for the bot
+	- priority number
+203 - i will be the active host for the bot
+	- priority number
+204 - i will step down as the active host for the bot
+	- priority number
+205 - is the host candidate with the priority number N connected?
+	- priority number
+206 - a rehosting is in progress, if you are the host please step down and get a new priority number
+
+>>> 300 series (priority tracking signals)
+301 - this is my priority number
+	- priority number
+302 - your priority number conflicts with mine
+
+>>> 9900 series (internal signals)
+9901 - Host Checking Protocol Time Elapsed
+9902 - Assign Priority Protocol Time Elapsed
+	- priority number
+9903 - Host Candidate Protocol Time Elapsed
+9904 - Rehosting Protocol Time Elapsed
+9905 - Host Declaration Protocol Time Elapsed
+
+Protocols:
+
+> Login Protocol
+- client is started
+- client connects to bot successfully
+- send 101
+- trigger Assign Priority Protocol with P = 1
+
+> Assign Priority Protocol
+- send 301 with priority number P
+- claim P as your own priority number
+- wait for 302
+	> 302 is received
+	- begin Assign Priority Protocol with P = P + 1
+	
+	> 302 is not received after X seconds
+	- begin Host Checking Protocol
+	
+	> 301 is received
+		- if self owner id is less than or equal to sender owner id
+			- do nothing
+		- else
+			- send 302
+	
+> Host Declaration Protocol
+- send 202 with priority number N
+- wait for a 206 or 201 for X seconds
+	- if X seconds elapsed or 201 is received
+		- begin Host Declaration Protocol
+	- if a 206 is received
+		- begin Assign Priority Protocol with P = self.P + 1
+
+> Host Checking Protocol
+- wait for 202 or 206 for Y seconds
+	- if Y seconds elapsed
+		- begin Rehosting Protocol
+	- if 202 is received
+		- begin Host Checking Protocol
+	- if 206 is received
+		- begin Host Candidate Protocol
+
+> Rehosting Protocol
+- send 206
+- send 203
+- wait for a 203 with a higher priority number for X seconds
+	- if valid 203 is received
+		- begin Host Checking Protocol
+	- if X seconds elapsed
+		- begin Host Declaration Protocol
+		
+> Host Candidate Protocol
+- wait for 202 for X seconds
+	- if 202 is received
+		- begin Host Checking Protocol
+	- if X seconds elapsed
+		- begin Rehosting Protocol
+
+
+Thought Experiments:
+	
+> two bots sending 301 and the same time and triggers a 302
+	- if the behavior of the bots is to increment their priority number, 
+	this will trigger another 301 which will then trigger another 302
+	- solution is only one bot will increment its own priority number
+	which will be determined by id
+
+> candidate host sends 201 but current host is lagging
+	- current does not see the 201 and will not send 202
+	- candidate assigns itself a priority number of 1 and becomes the new host
+	- old host receives the 201 and sends a 202
+	- new host receives the 202
+	- new host sends a 206 with priority number of host
+	- old host receives 206 and steps down as host
+	- old host triggers Assign Priority Protocol
+
+
+
+
+
+
+
+
+
+
