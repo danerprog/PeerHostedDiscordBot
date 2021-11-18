@@ -11,19 +11,22 @@ class PeerBotStateMachine:
         super().__init__()
         
         self.state = PeerBotStateLogin(self)
+        self.setPriorityNumber(0)
         
     async def start(self) :
+        self.logger.trace("start called")
         await self.state.start()
         
     async def execute(self, message):
-        self.logger.info("Execute called")
+        self.logger.trace("execute called")
         await self.state.execute(message)
         
     def setState(self, state):
-        self.logger.info("Setting state")
+        self.logger.trace("setState called")
         self.state = state
         
     async def next(self, state):
+        self.logger.debug("next called. state: " + str(state))
         self.setState(state)
         await self.start()
         
@@ -35,3 +38,12 @@ class PeerBotStateMachine:
         
     def getProtocolChannel(self):
         return self.protocolChannel
+        
+    def getPriorityNumber(self):
+        return self.priorityNumber
+        
+    def setPriorityNumber(self, priorityNumber):
+        self.priorityNumber = priorityNumber
+        
+    def incrementPriorityNumber(self):
+        self.setPriorityNumber(self.getPriorityNumber() + 1)

@@ -9,11 +9,11 @@ class PeerBotStateAssignPriority(PeerBotState):
     
     def __init__(self, stateMachine, priorityNumber):
         self.logger = Logger.getLogger("PeerBotStateAssignPriority - " + str(stateMachine.getUserId()))
-        self.priorityNumber = priorityNumber
-        super().__init__(stateMachine)
+        super().__init__(stateMachine, self.logger)
+        self.stateMachine.setPriorityNumber(priorityNumber)
         
     async def start(self):
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(301, self.priorityNumber))
+        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(301, self.stateMachine.getPriorityNumber()))
         self.logger.debug(sentmessage)
         
         await asyncio.sleep(PeerBotStateAssignPriority.NUMBER_OF_SECONDS_TO_WAIT_FOR_302)
@@ -21,17 +21,12 @@ class PeerBotStateAssignPriority(PeerBotState):
         
     async def _processMessage(self, protocolNumber, senderId, content):
         if(protocolNumber == 302):
-            ++self.priorityNumber
-            self.start()
+            self.stateMachine.incrementPriorityNumber()
+            await self.start()
         elif(protocolNumber == 301):
-            if(self.userId > senderId):
-                await self._send302IfPriorityNumberIsConflicting(int(content))
+            receivedPriorityNumber = int(content)
+            if(int(self.userId) > int(senderId)):
+                await self._send302IfPriorityNumberIsConflicting(receivedPriorityNumber)
         elif(protocolNumber == 9902):
             import peerbot.PeerBotStateHostChecking
-            await self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine, self.priorityNumber))
-    
-    async def _send302IfPriorityNumberIsConflicting(receivedPriorityNumber):
-        self.logger.debug("self.priorityNumber: " + str(self.priorityNumber) + ", receivedPriorityNumber: " + str(receivedPriorityNumber))
-        if(self.priorityNumber == receivedPriorityNumber):
-            self.logger.debug("self.priorityNumber == receivedPriorityNumber")
-            await self.stateMachine.getProtocolChannel().send(self._createMessage(302, ''))
+            await self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))

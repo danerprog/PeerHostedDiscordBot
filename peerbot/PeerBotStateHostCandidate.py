@@ -7,20 +7,25 @@ class PeerBotStateHostCandidate(PeerBotState):
 
     NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_CANDIDATE_REPLY = 5
 
-    def __init__(self, stateMachine, priorityNumber):
+    def __init__(self, stateMachine):
         self.logger = Logger.getLogger("PeerBotStateHostCandidate - " + str(stateMachine.getUserId()))
-        self.priorityNumber = priorityNumber
-        self.hostCandidateProtocolInternalMessageId = 0
-        super().__init__(stateMachine)
+        super().__init__(stateMachine, self.logger)
         
     async def start(self):
-        await asyncio.sleep(IrcProtocol.NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_CANDIDATE_REPLY)
-        await self._processMessage(9903, self.userId, ++self.hostCandidateProtocolInternalMessageId)
+        self.sendInternalMessageTask = asyncio.ensure_future(self._send9903AfterTimerExpires())
     
     async def _processMessage(self, protocolNumber, senderId, content):
         if(protocolNumber == 202):
+            self.sendInternalMessageTask.cancel()
             import peerbot.PeerBotStateHostChecking
-            await self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine, self.priorityNumber))
-        elif(protocolNumber == 9903 and self.hostCandidateProtocolInternalMessageId == int(content)):
+            await self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))
+        elif(protocolNumber == 9903):
             import peerbot.PeerBotStateRehosting
-            await self.stateMachine.next(peerbot.PeerBotStateRehosting.PeerBotStateRehosting(self.stateMachine, self.priorityNumber))
+            await self.stateMachine.next(peerbot.PeerBotStateRehosting.PeerBotStateRehosting(self.stateMachine))
+        elif(protocolNumber == 301):
+            receivedPriorityNumber = int(content)
+            await self._send302IfPriorityNumberIsConflicting(receivedPriorityNumber)
+            
+    async def _send9903AfterTimerExpires(self):
+        await asyncio.sleep(PeerBotStateHostCandidate.NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_CANDIDATE_REPLY)
+        await self._processMessage(9903, self.userId, '')
