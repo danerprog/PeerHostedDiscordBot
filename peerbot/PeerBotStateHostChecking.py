@@ -18,7 +18,7 @@ class PeerBotStateHostChecking(PeerBotState):
         if(protocolNumber == 202):
             self.logger.trace("202 received. cancelling current internal message task.")
             self.sendInternalMessageTask.cancel()
-            await self.start()
+            asyncio.ensure_future(self.start())
         elif(protocolNumber == 206):
             self.sendInternalMessageTask.cancel()
             import peerbot.PeerBotStateHostCandidate

@@ -15,8 +15,7 @@ class PeerBotStateAssignPriority(PeerBotState):
     async def start(self):
         sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(301, self.stateMachine.getPriorityNumber()))
         self.logger.debug(sentmessage)
-        
-        
+        await self._send9902AfterTimerExpires()
         
     async def _processMessage(self, protocolNumber, senderId, content):
         if(protocolNumber == 302):
