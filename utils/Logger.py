@@ -1,5 +1,6 @@
 from utils.fileio.TextFileManager import TextFileManager
 
+from datetime import datetime
 from pathlib import Path
 
 class Logger(object):
@@ -51,7 +52,8 @@ class Logger(object):
             self._write("[" + self._loggername + "][ERR]: " + str(object))
             
     def _write(self, string):
-        self._output_file.writeLine(string)
+        timestamp = datetime.utcnow().strftime('%H:%M:%S:%f')[:-3]
+        self._output_file.writeLine("[" + timestamp + "]" + string)
         self._output_file.flush()
 
     def getLogger(name):
