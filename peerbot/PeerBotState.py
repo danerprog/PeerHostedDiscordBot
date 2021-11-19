@@ -9,17 +9,17 @@ class PeerBotState(ABC):
         self.userId = self.stateMachine.getUser().id
         
     @abstractmethod
-    async def start(self):
+    def start(self):
         pass
         
-    async def execute(self, message):
+    def execute(self, message):
         self.logger.trace("execute called")
         protocolNumber, senderUserId, content, comments = self._unpackMessage(message.content)
         senderUserIdInt = int(senderUserId)
         
         if(senderUserIdInt != self.userId):
             self.logger.debug("Processing message. protocolNumber: " + protocolNumber + ", senderUserId: " + senderUserId + ", content: " + content)
-            await self._processMessage(int(protocolNumber), senderUserIdInt, content)
+            self._processMessage(int(protocolNumber), senderUserIdInt, content)
 
     def _createMessage(self, protocolNumber, content = '', comments = None):
         self.logger.trace("_createMessage called")
@@ -35,9 +35,9 @@ class PeerBotState(ABC):
         protocolNumber, userId, content = importantMessage[1:].split(" ", 3)
         return protocolNumber, userId, content, comments
         
-    async def _send302IfPriorityNumberIsConflicting(self, receivedPriorityNumber):
+    async def _broadcast302IfPriorityNumberIsConflicting(self, receivedPriorityNumber):
         ownPriorityNumber = self.stateMachine.getPriorityNumber()
-        self.logger.debug("_send302IfPriorityNumberIsConflicting called. ownPriorityNumber: " + str(ownPriorityNumber) + ", receivedPriorityNumber: " + str(receivedPriorityNumber))
+        self.logger.debug("_broadcast302IfPriorityNumberIsConflicting called. ownPriorityNumber: " + str(ownPriorityNumber) + ", receivedPriorityNumber: " + str(receivedPriorityNumber))
         if(ownPriorityNumber == int(receivedPriorityNumber)):
             self.logger.debug("ownPriorityNumber == receivedPriorityNumber")
             await self.stateMachine.getProtocolChannel().send(self._createMessage(302, ''))

@@ -17,12 +17,12 @@ class PeerBot(discord.Client):
         self.stateMachine = PeerBotStateMachine(await self._convertIdToObjects(self.args))
         
         self.isBotReady = True
-        await self.stateMachine.start()
+        self.stateMachine.start()
         
     async def on_message(self, message):
         if self.isBotReady:
             self.logger.trace("on_message called")
-            await self.stateMachine.execute(message)
+            self.stateMachine.execute(message)
         
     async def _convertIdToObjects(self, args):
         return {

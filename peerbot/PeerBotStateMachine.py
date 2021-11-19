@@ -13,22 +13,22 @@ class PeerBotStateMachine:
         self.state = PeerBotStateLogin(self)
         self.setPriorityNumber(0)
         
-    async def start(self) :
-        self.logger.trace("start called")
-        await self.state.start()
+    def start(self) :
+        self.logger.trace("start called. state: " + str(self.state))
+        self.state.start()
         
-    async def execute(self, message):
-        self.logger.trace("execute called")
-        await self.state.execute(message)
+    def execute(self, message):
+        self.logger.trace("execute called. state: " + str(self.state))
+        self.state.execute(message)
         
     def setState(self, state):
         self.logger.trace("setState called")
         self.state = state
         
-    async def next(self, state):
+    def next(self, state):
         self.logger.debug("next called. state: " + str(state))
         self.setState(state)
-        await self.start()
+        self.start()
         
     def getUser(self):
         return self.user
