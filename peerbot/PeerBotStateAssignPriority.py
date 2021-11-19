@@ -16,8 +16,7 @@ class PeerBotStateAssignPriority(PeerBotState):
         sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(301, self.stateMachine.getPriorityNumber()))
         self.logger.debug(sentmessage)
         
-        await asyncio.sleep(PeerBotStateAssignPriority.NUMBER_OF_SECONDS_TO_WAIT_FOR_302)
-        await self._processMessage(9902, self.userId, '')
+        
         
     async def _processMessage(self, protocolNumber, senderId, content):
         if(protocolNumber == 302):
@@ -30,3 +29,10 @@ class PeerBotStateAssignPriority(PeerBotState):
         elif(protocolNumber == 9902):
             import peerbot.PeerBotStateHostChecking
             await self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))
+            
+    async def _send9902AfterTimerExpires(self):
+        self.logger.trace("_send9902AfterTimerExpires called")
+        await asyncio.sleep(PeerBotStateAssignPriority.NUMBER_OF_SECONDS_TO_WAIT_FOR_302)
+        
+        self.logger.trace("_send9902AfterTimerExpires timer expired")
+        await self._processMessage(9902, self.userId, '')

@@ -9,6 +9,7 @@ class PeerBotStateHostDeclaration(PeerBotState):
     
     def __init__(self, stateMachine):
         self.logger = Logger.getLogger("PeerBotStateHostDeclaration - " + str(stateMachine.getUserId()))
+        self.numberOfTimes202HasBeenBroadcast = 0
         super().__init__(stateMachine, self.logger)
         
     async def start(self):
@@ -29,11 +30,15 @@ class PeerBotStateHostDeclaration(PeerBotState):
             await self._send302IfPriorityNumberIsConflicting(receivedPriorityNumber)
             
     async def _send9905AfterTimerExpires(self):
+        self.logger.trace("_send9905AfterTimerExpires called")
         await asyncio.sleep(PeerBotStateHostDeclaration.NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_DECLARATION_REPLY)
+        
+        self.logger.trace("_send9905AfterTimerExpires timer expired")
         await self._processMessage(9905, self.userId, '')
         
     async def _broadcast202(self):
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(202, ''))
+        self.numberOfTimes202HasBeenBroadcast += 1
+        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(202, self.numberOfTimes202HasBeenBroadcast))
         self.logger.debug(sentmessage.content)
         
     

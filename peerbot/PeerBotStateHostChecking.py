@@ -34,5 +34,5 @@ class PeerBotStateHostChecking(PeerBotState):
         self.logger.trace("_send9901AfterTimerExpires called")
         await asyncio.sleep(PeerBotStateHostChecking.NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_CANDIDATE_REPLY)
         
-        self.logger.trace("_send9901AfterTimerExpires timer expires. calling self._processMessage")
+        self.logger.trace("_send9901AfterTimerExpires timer expired")
         await self._processMessage(9901, self.userId, '')
