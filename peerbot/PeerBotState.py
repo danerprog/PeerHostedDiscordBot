@@ -7,6 +7,7 @@ class PeerBotState(ABC):
         self.logger = logger
         self.stateMachine = stateMachine
         self.userId = self.stateMachine.getUser().id
+        self.ownId = self.stateMachine.getOwnId()
         
     @abstractmethod
     def start(self):
@@ -14,12 +15,14 @@ class PeerBotState(ABC):
         
     def execute(self, message):
         self.logger.trace("execute called")
-        protocolNumber, senderUserId, content, comments = self._unpackMessage(message.content)
-        senderUserIdInt = int(senderUserId)
-        
-        if(senderUserIdInt != self.userId):
-            self.logger.debug("Processing message. protocolNumber: " + protocolNumber + ", senderUserId: " + senderUserId + ", content: " + content)
-            self._processMessage(int(protocolNumber), senderUserIdInt, content)
+        if(self._isMessageFromOwnAccount(message)):
+            self.logger.trace("unpacking message")
+            protocolNumber, senderUserIdStr, content, comments = self._unpackMessage(message.content)
+            senderUserId = int(senderUserIdStr)
+            
+            if(self._isMessageFromOwnClient(senderUserId)):
+                self.logger.debug("Processing message. protocolNumber: " + protocolNumber + ", senderUserId: " + senderUserIdStr + ", content: " + content)
+                self._processMessage(int(protocolNumber), senderUserId, content)
 
     def _createMessage(self, protocolNumber, content = '', comments = None):
         self.logger.trace("_createMessage called")
@@ -34,6 +37,12 @@ class PeerBotState(ABC):
         importantMessage, comments = message.split("]", 2)
         protocolNumber, userId, content = importantMessage[1:].split(" ", 3)
         return protocolNumber, userId, content, comments
+        
+    def _isMessageFromOwnClient(self, senderUserId):
+        return senderUserId != self.userId
+        
+    def _isMessageFromOwnAccount(self, message):
+        return message.author.id == self.ownId
         
     async def _broadcast302IfPriorityNumberIsConflicting(self, receivedPriorityNumber):
         ownPriorityNumber = self.stateMachine.getPriorityNumber()

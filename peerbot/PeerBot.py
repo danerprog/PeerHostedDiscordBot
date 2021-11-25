@@ -14,7 +14,7 @@ class PeerBot(discord.Client):
         stringifiedUserId = str(self.args['userId'])
         self.logger = Logger.getLogger("PeerBot - " + stringifiedUserId)
         self.logger.trace("on_ready called")
-        self.stateMachine = PeerBotStateMachine(await self._convertIdToObjects(self.args))
+        self.stateMachine = PeerBotStateMachine(await self._getStateMachineArgs(self.args))
         
         self.isBotReady = True
         self.stateMachine.start()
@@ -24,8 +24,9 @@ class PeerBot(discord.Client):
             self.logger.trace("on_message called")
             self.stateMachine.execute(message)
         
-    async def _convertIdToObjects(self, args):
+    async def _getStateMachineArgs(self, args):
         return {
             'user' : await self.fetch_user(int(args['userId'])),
-            'protocolChannel' : await self.fetch_channel(int(args['protocolChannelId']))
+            'protocolChannel' : await self.fetch_channel(int(args['protocolChannelId'])),
+            'appInfo' : await self.application_info()
         }

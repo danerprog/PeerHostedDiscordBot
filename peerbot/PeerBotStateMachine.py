@@ -7,6 +7,7 @@ class PeerBotStateMachine:
     def __init__(self, args):
         self.user = args['user']
         self.protocolChannel =  args['protocolChannel']
+        self.applicationInfo = args['appInfo']
         self.logger = Logger.getLogger("PeerBotStateMachine - " + str(self.getUser().id))
         super().__init__()
         
@@ -38,6 +39,9 @@ class PeerBotStateMachine:
         
     def getProtocolChannel(self):
         return self.protocolChannel
+        
+    def getOwnId(self):
+        return self.applicationInfo.id
         
     def getPriorityNumber(self):
         return self.priorityNumber

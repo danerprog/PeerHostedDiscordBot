@@ -5,7 +5,7 @@ import asyncio
 
 class PeerBotStateHostDeclaration(PeerBotState):
     
-    NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_DECLARATION_REPLY = 1
+    NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_DECLARATION_REPLY = 2
     
     def __init__(self, stateMachine):
         self.logger = Logger.getLogger("PeerBotStateHostDeclaration - " + str(stateMachine.getUserId()))
