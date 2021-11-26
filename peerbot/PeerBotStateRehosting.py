@@ -1,4 +1,6 @@
+from peerbot.Configuration import CONFIG
 from peerbot.PeerBotState import PeerBotState
+from peerbot.Signals import SIGNAL
 from utils.Logger import Logger
 
 import asyncio
@@ -12,38 +14,38 @@ class PeerBotStateRehosting(PeerBotState):
         super().__init__(stateMachine, self.logger)
         
     def start(self):
-        asyncio.ensure_future(self._broadcast206())
-        asyncio.ensure_future(self._broadcast203())
-        self.sendInternalMessageTask = asyncio.ensure_future(self._send9904AfterTimerExpires())
+        asyncio.ensure_future(self._broadcastRehostingInProgressSignal())
+        asyncio.ensure_future(self._broadcastIntentToBecomeHostDeclarationSignal())
+        self.sendInternalMessageTask = asyncio.ensure_future(self._sendRehostingProtocolTimeElapsedAfterAwaitingSleep())
 
     def _processMessage(self, signalNumber, senderId, content):
-        if(signalNumber == 203):
+        if(signalNumber == SIGNAL["IntentToBecomeHostDeclaration"]):
             priorityNumber = int(content)
             if(self.stateMachine.getPriorityNumber() < priorityNumber):
                 self.logger.trace("self.stateMachine.getPriorityNumber() < priorityNumber")
                 self.sendInternalMessageTask.cancel()
                 import peerbot.PeerBotStateHostChecking
                 self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))
-        elif(signalNumber == 9904):
+        elif(signalNumber == SIGNAL["RehostingProtocolTimeElapsed"]):
             import peerbot.PeerBotStateHostDeclaration
             self.stateMachine.next(peerbot.PeerBotStateHostDeclaration.PeerBotStateHostDeclaration(self.stateMachine))
-        elif(signalNumber == 301):
+        elif(signalNumber == SIGNAL["PriorityNumberDeclaration"]):
             receivedPriorityNumber = int(content)
             asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
             
-    async def _send9904AfterTimerExpires(self):
-        self.logger.trace("_send9904AfterTimerExpires called")
-        await asyncio.sleep(PeerBotStateRehosting.NUMBER_OF_SECONDS_TO_WAIT_FOR_HIGHER_PRIORITY_REHOSTER)
+    async def _sendRehostingProtocolTimeElapsedAfterAwaitingSleep(self):
+        self.logger.trace("_sendRehostingProtocolTimeElapsedAfterAwaitingSleep called")
+        await asyncio.sleep(CONFIG["NumberOfSecondsToWaitForAHigherPriorityRehoster"])
         
-        self.logger.trace("_send9904AfterTimerExpires timer expired")
-        self._processMessage(9904, self.userId, '')
+        self.logger.trace("_sendRehostingProtocolTimeElapsedAfterAwaitingSleep timer expired")
+        self._processMessage(SIGNAL["RehostingProtocolTimeElapsed"], self.userId, '')
         
-    async def _broadcast206(self):
-        self.logger.trace("_broadcast206 called")
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(206, ''))
+    async def _broadcastRehostingInProgressSignal(self):
+        self.logger.trace("_broadcastRehostingInProgressSignal called")
+        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(SIGNAL["RehostingInProgress"], ''))
         self.logger.debug(sentmessage.content)
         
-    async def _broadcast203(self):
-        self.logger.trace("_broadcast203 called")
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(203, self.stateMachine.getPriorityNumber()))
+    async def _broadcastIntentToBecomeHostDeclarationSignal(self):
+        self.logger.trace("_broadcastIntentToBecomeHostDeclarationSignal called")
+        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(SIGNAL["IntentToBecomeHostDeclaration"], self.stateMachine.getPriorityNumber()))
         self.logger.debug(sentmessage.content)

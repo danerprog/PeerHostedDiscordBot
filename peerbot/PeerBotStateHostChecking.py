@@ -1,38 +1,38 @@
+from peerbot.Configuration import CONFIG
 from peerbot.PeerBotState import PeerBotState
+from peerbot.Signals import SIGNAL
 from utils.Logger import Logger
 
 import asyncio
 
 class PeerBotStateHostChecking(PeerBotState):
 
-    NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_CANDIDATE_REPLY = 5
-
     def __init__(self, stateMachine):
         self.logger = Logger.getLogger("PeerBotStateHostChecking - " + str(stateMachine.getUserId()))
         super().__init__(stateMachine, self.logger)
         
     def start(self):
-        self.sendInternalMessageTask = asyncio.ensure_future(self._send9901AfterTimerExpires())
+        self.sendInternalMessageTask = asyncio.ensure_future(self._sendHostCheckingProtocolTimeElapsedSignalAfterAwaitingSleep())
         
     def _processMessage(self, signalNumber, senderId, content):
-        if(signalNumber == 202):
-            self.logger.trace("202 received. cancelling current internal message task.")
+        if(signalNumber == SIGNAL["HostDeclaration"]):
+            self.logger.trace("host declaration signal received. cancelling current internal message task.")
             self.sendInternalMessageTask.cancel()
             self.start()
-        elif(signalNumber == 206):
+        elif(signalNumber == SIGNAL["RehostingInProgress"]):
             self.sendInternalMessageTask.cancel()
             import peerbot.PeerBotStateHostCandidate
             self.stateMachine.next(peerbot.PeerBotStateHostCandidate.PeerBotStateHostCandidate(self.stateMachine))
-        elif(signalNumber == 9901):
+        elif(signalNumber == SIGNAL["HostCheckingProtocolTimeElapsed"]):
             import peerbot.PeerBotStateRehosting
             self.stateMachine.next(peerbot.PeerBotStateRehosting.PeerBotStateRehosting(self.stateMachine))
-        elif(signalNumber == 301):
+        elif(signalNumber == SIGNAL["PriorityNumberDeclaration"]):
             receivedPriorityNumber = int(content)
             asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
             
-    async def _send9901AfterTimerExpires(self):
-        self.logger.trace("_send9901AfterTimerExpires called")
-        await asyncio.sleep(PeerBotStateHostChecking.NUMBER_OF_SECONDS_TO_WAIT_FOR_HOST_CANDIDATE_REPLY)
+    async def _sendHostCheckingProtocolTimeElapsedSignalAfterAwaitingSleep(self):
+        self.logger.trace("_sendHostCheckingProtocolTimeElapsedSignalAfterAwaitingSleep called")
+        await asyncio.sleep(CONFIG["NumberOfSecondsToWaitForHostDeclarationSignal"])
         
-        self.logger.trace("_send9901AfterTimerExpires timer expired")
-        self._processMessage(9901, self.userId, '')
+        self.logger.trace("_sendHostCheckingProtocolTimeElapsedSignalAfterAwaitingSleep timer expired")
+        self._processMessage(SIGNAL["HostCheckingProtocolTimeElapsed"], self.userId, '')

@@ -14,7 +14,7 @@ class PeerBotStateHostDeclaration(PeerBotState):
         
     def start(self):
         asyncio.ensure_future(self._broadcastHostDeclarationSignal())
-        self.sendInternalMessageTask = asyncio.ensure_future(self._sendHostDeclarationProtocolTimeElapsedSignal())
+        self.sendInternalMessageTask = asyncio.ensure_future(self._sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep())
        
     def _processMessage(self, signalNumber, senderId, content):
         if(signalNumber == SIGNAL["RehostingInProgress"]):
@@ -34,11 +34,11 @@ class PeerBotStateHostDeclaration(PeerBotState):
                 self.logger.trace("receivedPriorityNumber > self.stateMachine.getPriorityNumber(). stepping down as host")
                 self.sendInternalMessageTask.cancel()
             
-    async def _sendHostDeclarationProtocolTimeElapsedSignal(self):
-        self.logger.trace("_sendHostDeclarationProtocolTimeElapsedSignal called")
+    async def _sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep(self):
+        self.logger.trace("_sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep called")
         await asyncio.sleep(CONFIG["NumberOfSecondsToWaitForHostDeclarationToBeSent"])
         
-        self.logger.trace("_sendHostDeclarationProtocolTimeElapsedSignal timer expired")
+        self.logger.trace("_sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep timer expired")
         self._processMessage(SIGNAL["HostDeclarationProtocolTimeElapsed"], self.userId, '')
         
     async def _broadcastHostDeclarationSignal(self):
