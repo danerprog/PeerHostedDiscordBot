@@ -14,15 +14,15 @@ class PeerBotStateHostCandidate(PeerBotState):
     def start(self):
         self.sendInternalMessageTask = asyncio.ensure_future(self._send9903AfterTimerExpires())
     
-    def _processMessage(self, protocolNumber, senderId, content):
-        if(protocolNumber == 202):
+    def _processMessage(self, signalNumber, senderId, content):
+        if(signalNumber == 202):
             self.sendInternalMessageTask.cancel()
             import peerbot.PeerBotStateHostChecking
             self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))
-        elif(protocolNumber == 9903):
+        elif(signalNumber == 9903):
             import peerbot.PeerBotStateRehosting
             self.stateMachine.next(peerbot.PeerBotStateRehosting.PeerBotStateRehosting(self.stateMachine))
-        elif(protocolNumber == 301):
+        elif(signalNumber == 301):
             receivedPriorityNumber = int(content)
             asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
             

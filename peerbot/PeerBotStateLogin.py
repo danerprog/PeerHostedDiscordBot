@@ -17,8 +17,8 @@ class PeerBotStateLogin(PeerBotState):
         import peerbot.PeerBotStateSynchronize
         self.stateMachine.next(peerbot.PeerBotStateSynchronize.PeerBotStateSynchronize(self.stateMachine))
         
-    def _processMessage(self, protocolNumber, senderId, content):
-        self.logger.info("Unexpected message received. protocolNumber: " + str(protocolNumber) + ", senderId: " + str(senderId) + ", content: " + str(content))
+    def _processMessage(self, signalNumber, senderId, content):
+        self.logger.info("Unexpected message received. signalNumber: " + str(signalNumber) + ", senderId: " + str(senderId) + ", content: " + str(content))
         
     async def _broadcast101(self):
         self.logger.trace("_broadcast101 called")

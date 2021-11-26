@@ -16,19 +16,19 @@ class PeerBotStateHostDeclaration(PeerBotState):
         asyncio.ensure_future(self._broadcastHostDeclarationSignal())
         self.sendInternalMessageTask = asyncio.ensure_future(self._sendHostDeclarationProtocolTimeElapsedSignal())
        
-    def _processMessage(self, protocolNumber, senderId, content):
-        if(protocolNumber == SIGNAL["RehostingInProgress"]):
+    def _processMessage(self, signalNumber, senderId, content):
+        if(signalNumber == SIGNAL["RehostingInProgress"]):
             self.sendInternalMessageTask.cancel()
             import peerbot.PeerBotStateAssignPriority
             self.stateMachine.next(peerbot.PeerBotStateAssignPriority.PeerBotStateAssignPriority(self.stateMachine, self.stateMachine.getPriorityNumber() + 1))
-        elif(protocolNumber == SIGNAL["HostDeclarationProtocolTimeElapsed"]):
+        elif(signalNumber == SIGNAL["HostDeclarationProtocolTimeElapsed"]):
             self.start()
-        elif(protocolNumber == SIGNAL["RequestHostDeclarationFromHost"]):
+        elif(signalNumber == SIGNAL["RequestHostDeclarationFromHost"]):
             asyncio.ensure_future(self._broadcastHostDeclarationSignal())
-        elif(protocolNumber == SIGNAL["PriorityNumberDeclaration"]):
+        elif(signalNumber == SIGNAL["PriorityNumberDeclaration"]):
             receivedPriorityNumber = int(content)
             asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
-        elif(protocolNumber == SIGNAL["HostDeclaration"]):
+        elif(signalNumber == SIGNAL["HostDeclaration"]):
             receivedPriorityNumber = int(content)
             if(receivedPriorityNumber > self.stateMachine.getPriorityNumber()):
                 self.logger.trace("receivedPriorityNumber > self.stateMachine.getPriorityNumber(). stepping down as host")

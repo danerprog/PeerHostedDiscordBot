@@ -17,16 +17,16 @@ class PeerBotState(ABC):
         self.logger.trace("execute called")
         if(self._isMessageFromOwnAccount(message)):
             self.logger.trace("unpacking message")
-            protocolNumber, senderUserIdStr, content, comments = self._unpackMessage(message.content)
+            signalNumber, senderUserIdStr, content, comments = self._unpackMessage(message.content)
             senderUserId = int(senderUserIdStr)
             
             if(self._isMessageFromOwnClient(senderUserId)):
-                self.logger.debug("Processing message. protocolNumber: " + protocolNumber + ", senderUserId: " + senderUserIdStr + ", content: " + content)
-                self._processMessage(int(protocolNumber), senderUserId, content)
+                self.logger.debug("Processing message. signalNumber: " + signalNumber + ", senderUserId: " + senderUserIdStr + ", content: " + content)
+                self._processMessage(int(signalNumber), senderUserId, content)
 
-    def _createMessage(self, protocolNumber, content = '', comments = None):
+    def _createMessage(self, signalNumber, content = '', comments = None):
         self.logger.trace("_createMessage called")
-        message = '[' + str(protocolNumber) + ' ' + str(self.userId) + ' ' + str(content) + ']'
+        message = '[' + str(signalNumber) + ' ' + str(self.userId) + ' ' + str(content) + ']'
         if comments != None:
             message += ' ' + str(comments)
         self.logger.debug("Message created. message: " + message)
@@ -35,13 +35,13 @@ class PeerBotState(ABC):
     def _unpackMessage(self, message):
         self.logger.trace("_unpackMessage called")
         importantMessage, comments = message.split("]", 1)
-        protocolNumber, userId, content = importantMessage[1:].split(" ", 2)
-        return protocolNumber, userId, content, comments
+        signalNumber, userId, content = importantMessage[1:].split(" ", 2)
+        return signalNumber, userId, content, comments
         
-    def _unpackContent(self, protocolNumber, rawContent):
-        self.logger.debug("_unpackContent called. protocolNumber: " + str(protocolNumber) + ", rawContent: " + rawContent)
+    def _unpackContent(self, signalNumber, rawContent):
+        self.logger.debug("_unpackContent called. signalNumber: " + str(signalNumber) + ", rawContent: " + rawContent)
         unpackedContent = {}
-        if(protocolNumber == 202):
+        if(signalNumber == 202):
             tokens = rawContent.split(" ", 2)
             unpackedContent = {
                 "priorityNumber" : int(tokens[0]),
@@ -68,7 +68,7 @@ class PeerBotState(ABC):
             await self.stateMachine.getProtocolChannel().send(self._createMessage(302, ''))
         
     @abstractmethod
-    async def _processMessage(self, protocolNumber, senderId, content):
+    async def _processMessage(self, signalNumber, senderId, content):
         pass
         
     

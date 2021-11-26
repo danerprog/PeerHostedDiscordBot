@@ -16,16 +16,16 @@ class PeerBotStateAssignPriority(PeerBotState):
         asyncio.ensure_future(self._broadcast301())
         self.internalMessageTask = asyncio.ensure_future(self._send9902AfterTimerExpires())
         
-    def _processMessage(self, protocolNumber, senderId, content):
-        if(protocolNumber == 302):
+    def _processMessage(self, signalNumber, senderId, content):
+        if(signalNumber == 302):
             self.stateMachine.incrementPriorityNumber()
             self.internalMessageTask.cancel()
             self.start()
-        elif(protocolNumber == 301):
+        elif(signalNumber == 301):
             receivedPriorityNumber = int(content)
             if(int(self.userId) > int(senderId)):
                 asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
-        elif(protocolNumber == 9902):
+        elif(signalNumber == 9902):
             import peerbot.PeerBotStateHostChecking
             self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))
             
