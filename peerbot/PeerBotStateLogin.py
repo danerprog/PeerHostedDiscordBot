@@ -14,11 +14,11 @@ class PeerBotStateLogin(PeerBotState):
         self._goToAssignPriorityState()
         
     def _goToAssignPriorityState(self):
-        import peerbot.PeerBotStateAssignPriority
-        self.stateMachine.next(peerbot.PeerBotStateAssignPriority.PeerBotStateAssignPriority(self.stateMachine, 1))
+        import peerbot.PeerBotStateSynchronize
+        self.stateMachine.next(peerbot.PeerBotStateSynchronize.PeerBotStateSynchronize(self.stateMachine))
         
     def _processMessage(self, protocolNumber, senderId, content):
-        self.logger.warning("Unexpected message received. protocolNumber: " + str(protocolNumber) + ", senderId: " + str(senderId) + ", content: " + str(content))
+        self.logger.info("Unexpected message received. protocolNumber: " + str(protocolNumber) + ", senderId: " + str(senderId) + ", content: " + str(content))
         
     async def _broadcast101(self):
         self.logger.trace("_broadcast101 called")

@@ -24,7 +24,7 @@ class PeerBotStateAssignPriority(PeerBotState):
         elif(protocolNumber == 301):
             receivedPriorityNumber = int(content)
             if(int(self.userId) > int(senderId)):
-                asyncio.ensure_future(self._broadcast302IfPriorityNumberIsConflicting(receivedPriorityNumber))
+                asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
         elif(protocolNumber == 9902):
             import peerbot.PeerBotStateHostChecking
             self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))

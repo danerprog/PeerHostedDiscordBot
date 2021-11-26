@@ -13,6 +13,7 @@ class PeerBotStateMachine:
         
         self.state = PeerBotStateLogin(self)
         self.setPriorityNumber(0)
+        self.setRehostCycleId(0)
         
     def start(self) :
         self.logger.trace("start called. state: " + str(self.state))
@@ -42,7 +43,7 @@ class PeerBotStateMachine:
         
     def getOwnId(self):
         return self.applicationInfo.id
-        
+  
     def getPriorityNumber(self):
         return self.priorityNumber
         
@@ -51,3 +52,9 @@ class PeerBotStateMachine:
         
     def incrementPriorityNumber(self):
         self.setPriorityNumber(self.getPriorityNumber() + 1)
+        
+    def getRehostCycleId(self):
+        return self.rehostCycleId
+        
+    def setRehostCycleId(self, id):
+        self.rehostCycleId = id

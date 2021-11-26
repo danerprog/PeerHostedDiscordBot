@@ -24,7 +24,7 @@ class PeerBotStateHostCandidate(PeerBotState):
             self.stateMachine.next(peerbot.PeerBotStateRehosting.PeerBotStateRehosting(self.stateMachine))
         elif(protocolNumber == 301):
             receivedPriorityNumber = int(content)
-            asyncio.ensure_future(self._broadcast302IfPriorityNumberIsConflicting(receivedPriorityNumber))
+            asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
             
     async def _send9903AfterTimerExpires(self):
         self.logger.trace("_send9903AfterTimerExpires called")

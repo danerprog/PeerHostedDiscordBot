@@ -34,9 +34,25 @@ class PeerBotState(ABC):
         
     def _unpackMessage(self, message):
         self.logger.trace("_unpackMessage called")
-        importantMessage, comments = message.split("]", 2)
-        protocolNumber, userId, content = importantMessage[1:].split(" ", 3)
+        importantMessage, comments = message.split("]", 1)
+        protocolNumber, userId, content = importantMessage[1:].split(" ", 2)
         return protocolNumber, userId, content, comments
+        
+    def _unpackContent(self, protocolNumber, rawContent):
+        self.logger.debug("_unpackContent called. protocolNumber: " + str(protocolNumber) + ", rawContent: " + rawContent)
+        unpackedContent = {}
+        if(protocolNumber == 202):
+            tokens = rawContent.split(" ", 2)
+            unpackedContent = {
+                "priorityNumber" : int(tokens[0]),
+                "rehostCycleId" : int(tokens[1])
+            }
+        else:
+            unpackedContent = {
+                "content" : rawContent
+            }
+        return unpackedContent
+        
         
     def _isMessageFromOwnClient(self, senderUserId):
         return senderUserId != self.userId
@@ -44,9 +60,9 @@ class PeerBotState(ABC):
     def _isMessageFromOwnAccount(self, message):
         return message.author.id == self.ownId
         
-    async def _broadcast302IfPriorityNumberIsConflicting(self, receivedPriorityNumber):
+    async def _broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(self, receivedPriorityNumber):
         ownPriorityNumber = self.stateMachine.getPriorityNumber()
-        self.logger.debug("_broadcast302IfPriorityNumberIsConflicting called. ownPriorityNumber: " + str(ownPriorityNumber) + ", receivedPriorityNumber: " + str(receivedPriorityNumber))
+        self.logger.debug("_broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting called. ownPriorityNumber: " + str(ownPriorityNumber) + ", receivedPriorityNumber: " + str(receivedPriorityNumber))
         if(ownPriorityNumber == int(receivedPriorityNumber)):
             self.logger.debug("ownPriorityNumber == receivedPriorityNumber")
             await self.stateMachine.getProtocolChannel().send(self._createMessage(302, ''))
