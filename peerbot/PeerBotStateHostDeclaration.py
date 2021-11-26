@@ -28,6 +28,11 @@ class PeerBotStateHostDeclaration(PeerBotState):
         elif(protocolNumber == 301):
             receivedPriorityNumber = int(content)
             asyncio.ensure_future(self._broadcast302IfPriorityNumberIsConflicting(receivedPriorityNumber))
+        elif(protocolNumber == 202):
+            receivedPriorityNumber = int(content)
+            if(receivedPriorityNumber > self.stateMachine.getPriorityNumber()):
+                self.logger.trace("receivedPriorityNumber > self.stateMachine.getPriorityNumber(). stepping down as host")
+                self.sendInternalMessageTask.cancel()
             
     async def _send9905AfterTimerExpires(self):
         self.logger.trace("_send9905AfterTimerExpires called")
@@ -38,7 +43,7 @@ class PeerBotStateHostDeclaration(PeerBotState):
         
     async def _broadcast202(self):
         self.numberOfTimes202HasBeenBroadcast += 1
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(202, self.numberOfTimes202HasBeenBroadcast))
+        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(202, self.stateMachine.getPriorityNumber(), self.numberOfTimes202HasBeenBroadcast))
         self.logger.debug(sentmessage.content)
         
     
