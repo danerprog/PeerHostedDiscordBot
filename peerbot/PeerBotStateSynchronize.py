@@ -18,11 +18,12 @@ class PeerBotStateSynchronize(PeerBotState):
     def start(self):
         self._resetInternalMessageTask()
         
-    def _processMessage(self, signalNumber, senderId, content):
+    def _processMessage(self, messageContent):
+        signalNumber = messageContent["signalNumber"]
+        
         if(signalNumber == SIGNAL["HostDeclaration"]):
-            unpackedContent = self._unpackContent(signalNumber, content)
-            self.priorityNumber = unpackedContent["priorityNumber"] + 1
-            self.rehostCycleId = unpackedContent["rehostCycleId"]
+            self.priorityNumber = messageContent["content"]["priorityNumber"] + 1
+            self.rehostCycleId = messageContent["content"]["rehostCycleId"]
             self._finishSynchronizeProtocol()
         elif(signalNumber == SIGNAL["SynchronizeProtocolTimeElapsed"]):
             self.priorityNumber = 1
@@ -33,8 +34,10 @@ class PeerBotStateSynchronize(PeerBotState):
 
     def _finishSynchronizeProtocol(self):
         self.logger.trace("_finishSynchronizeProtocol called")
+        
         self.sendInternalMessageTask.cancel()
         self.stateMachine.setRehostCycleId(self.rehostCycleId)
+        
         import peerbot.PeerBotStateAssignPriority
         self.stateMachine.next(peerbot.PeerBotStateAssignPriority.PeerBotStateAssignPriority(self.stateMachine, self.priorityNumber))
         
@@ -48,4 +51,6 @@ class PeerBotStateSynchronize(PeerBotState):
         await asyncio.sleep(CONFIG["NumberOfSecondsToWaitForHostDeclarationSignal"])
         
         self.logger.trace("_sendSynchronizeProtocolTimeElapsedSignal timer expired")
-        self._processMessage(SIGNAL["SynchronizeProtocolTimeElapsed"], self.userId, '')
+        self._processMessage({
+            "signalNumber" : SIGNAL["SynchronizeProtocolTimeElapsed"]
+        })

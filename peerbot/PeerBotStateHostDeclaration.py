@@ -13,10 +13,12 @@ class PeerBotStateHostDeclaration(PeerBotState):
         super().__init__(stateMachine, self.logger)
         
     def start(self):
-        asyncio.ensure_future(self._broadcastHostDeclarationSignal())
+        self._broadcastHostDeclarationSignal()
         self.sendInternalMessageTask = asyncio.ensure_future(self._sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep())
        
-    def _processMessage(self, signalNumber, senderId, content):
+    def _processMessage(self, messageContent):
+        signalNumber = messageContent["signalNumber"]
+        
         if(signalNumber == SIGNAL["RehostingInProgress"]):
             self.sendInternalMessageTask.cancel()
             import peerbot.PeerBotStateAssignPriority
@@ -24,28 +26,34 @@ class PeerBotStateHostDeclaration(PeerBotState):
         elif(signalNumber == SIGNAL["HostDeclarationProtocolTimeElapsed"]):
             self.start()
         elif(signalNumber == SIGNAL["RequestHostDeclarationFromHost"]):
-            asyncio.ensure_future(self._broadcastHostDeclarationSignal())
+            self._broadcastHostDeclarationSignal()
         elif(signalNumber == SIGNAL["PriorityNumberDeclaration"]):
-            receivedPriorityNumber = int(content)
-            asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
+            self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(messageContent["content"]["priorityNumber"])
         elif(signalNumber == SIGNAL["HostDeclaration"]):
-            receivedPriorityNumber = int(content)
-            if(receivedPriorityNumber > self.stateMachine.getPriorityNumber()):
-                self.logger.trace("receivedPriorityNumber > self.stateMachine.getPriorityNumber(). stepping down as host")
-                self.sendInternalMessageTask.cancel()
+            self._stopInternalMessageTaskIfRequired(messageContent["content"]["priorityNumber"])
             
     async def _sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep(self):
         self.logger.trace("_sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep called")
         await asyncio.sleep(CONFIG["NumberOfSecondsToWaitForHostDeclarationToBeSent"])
         
         self.logger.trace("_sendHostDeclarationProtocolTimeElapsedSignalAfterAwaitingSleep timer expired")
-        self._processMessage(SIGNAL["HostDeclarationProtocolTimeElapsed"], self.userId, '')
+        self._processMessage({
+            "signalNumber" : SIGNAL["HostDeclarationProtocolTimeElapsed"]
+        })
         
-    async def _broadcastHostDeclarationSignal(self):
+    def _broadcastHostDeclarationSignal(self):
         self.numberOfTimesHostDeclarationSignalHasBeenBroadcast += 1
-        content = str(self.stateMachine.getPriorityNumber()) + " " + str(self.stateMachine.getRehostCycleId())
+        contentDictionary = {
+            "priorityNumber" : self.stateMachine.getPriorityNumber(),
+            "rehostCycleId" : self.stateMachine.getRehostCycleId(),
+            "comments" : [self.numberOfTimesHostDeclarationSignalHasBeenBroadcast]
+        }
+        message = self._packHostDeclarationMessage(contentDictionary)
+        self._sendMessage(message)
         
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(SIGNAL["HostDeclaration"], content, self.numberOfTimesHostDeclarationSignalHasBeenBroadcast))
-        self.logger.debug(sentmessage.content)
+    def _stopInternalMessageTaskIfRequired(self, receivedPriorityNumber):
+        if(receivedPriorityNumber > self.stateMachine.getPriorityNumber()):
+            self.logger.trace("messageContent['content']['priorityNumber'] > self.stateMachine.getPriorityNumber(). stepping down as host")
+            self.sendInternalMessageTask.cancel()
         
     

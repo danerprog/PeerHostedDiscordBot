@@ -13,18 +13,19 @@ class PeerBotStateAssignPriority(PeerBotState):
         self.stateMachine.setPriorityNumber(priorityNumber)
         
     def start(self):
-        asyncio.ensure_future(self._broadcastPriorityNumberDeclarationSignal())
+        self._broadcastPriorityNumberDeclarationSignal()
         self.internalMessageTask = asyncio.ensure_future(self._sendAssignPriorityProtocolTimeElapsedSignalAfterAwaitingSleep())
         
-    def _processMessage(self, signalNumber, senderId, content):
+    def _processMessage(self, messageContent):
+        signalNumber = messageContent["signalNumber"]
+        
         if(signalNumber == SIGNAL["PriorityNumberIsConflicting"]):
             self.stateMachine.incrementPriorityNumber()
             self.internalMessageTask.cancel()
             self.start()
         elif(signalNumber == SIGNAL["PriorityNumberDeclaration"]):
-            receivedPriorityNumber = int(content)
-            if(int(self.userId) > int(senderId)):
-                asyncio.ensure_future(self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(receivedPriorityNumber))
+            if(int(self.userId) > messageContent["userId"]):
+                self._broadcastPriorityNumberDeclarationIfPriorityNumberIsConflicting(messageContent["content"]["priorityNumber"])
         elif(signalNumber == SIGNAL["AssignPriorityProtocolTimeElapsed"]):
             import peerbot.PeerBotStateHostChecking
             self.stateMachine.next(peerbot.PeerBotStateHostChecking.PeerBotStateHostChecking(self.stateMachine))
@@ -34,9 +35,14 @@ class PeerBotStateAssignPriority(PeerBotState):
         await asyncio.sleep(CONFIG["NumberOfSecondsToWaitForPriorityNumberIsConflictingSignal"])
         
         self.logger.trace("_sendAssignPriorityProtocolTimeElapsedSignalAfterAwaitingSleep timer expired")
-        self._processMessage(SIGNAL["AssignPriorityProtocolTimeElapsed"], self.userId, '')
+        self._processMessage({
+            "signalNumber" : SIGNAL["AssignPriorityProtocolTimeElapsed"]
+        })
         
-    async def _broadcastPriorityNumberDeclarationSignal(self):
+    def _broadcastPriorityNumberDeclarationSignal(self):
         self.logger.trace("_broadcastPriorityNumberDeclarationSignal called")
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(SIGNAL["PriorityNumberDeclaration"], self.stateMachine.getPriorityNumber()))
-        self.logger.debug(sentmessage.content)
+        contentDictionary = {
+            "priorityNumber" : self.stateMachine.getPriorityNumber()
+        }
+        message = self._packPriorityNumberDeclarationMessage(contentDictionary)
+        self._sendMessage(message)

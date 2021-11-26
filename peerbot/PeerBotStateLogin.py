@@ -11,18 +11,18 @@ class PeerBotStateLogin(PeerBotState):
         super().__init__(stateMachine, self.logger)
         
     def start(self):
-        asyncio.ensure_future(self._broadcastLoginSuccessfulSignal())
+        self._broadcastLoginSuccessfulSignal()
         self._goToAssignPriorityState()
         
     def _goToAssignPriorityState(self):
         import peerbot.PeerBotStateSynchronize
         self.stateMachine.next(peerbot.PeerBotStateSynchronize.PeerBotStateSynchronize(self.stateMachine))
         
-    def _processMessage(self, signalNumber, senderId, content):
-        self.logger.info("Unexpected message received. signalNumber: " + str(signalNumber) + ", senderId: " + str(senderId) + ", content: " + str(content))
+    def _processMessage(self, messageContent):
+        pass
         
-    async def _broadcastLoginSuccessfulSignal(self):
+    def _broadcastLoginSuccessfulSignal(self):
         self.logger.trace("_broadcastLoginSuccessfulSignal called")
-        user = self.stateMachine.getUser()
-        sentmessage = await self.stateMachine.getProtocolChannel().send(self._createMessage(SIGNAL["LoginSuccessful"], str(user.id)))
-        self.logger.debug(sentmessage.content)
+        
+        message = self._packLoginSuccessfulMessage()
+        self._sendMessage(message)
